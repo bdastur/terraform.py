@@ -16,6 +16,12 @@
 """\
 Dynamic inventory for Terraform - finds all `.tfstate` files below the working
 directory and generates an inventory based on them.
+
+Optional Environment Variables:
+  SSH_PRIVATE_IP       : Env variable to indicate using private_ip as
+                         ansible ssh ip
+  TERRAFORM_STATE_ROOT : Env variable to indicate the root to search for
+                         `.tfstate`s
 """
 from __future__ import unicode_literals, print_function
 import argparse
