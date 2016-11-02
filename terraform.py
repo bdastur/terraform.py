@@ -412,7 +412,7 @@ def aws_host(resource, module_name):
     if 'tags.sshUser' in raw_attrs:
         attrs['ansible_ssh_user'] = raw_attrs['tags.sshUser']
     if 'tags.sshPrivateIp' in raw_attrs or \
-            os.environ.get('SSH_PRIVATE_IP', None) is not None:
+            os.environ.get('USE_PRIVATE_IP', None) is not None:
         attrs['ansible_ssh_host'] = raw_attrs['private_ip']
 
     # attrs specific to Mantl
