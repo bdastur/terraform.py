@@ -48,8 +48,12 @@ def iterresources(filenames):
             state = json.load(json_file)
             for module in state['modules']:
                 name = module['path'][-1]
+                try:
+                    outputs = module['outputs']
+                except KeyError:
+                    outputs = {}
                 for key, resource in module['resources'].items():
-                    yield name, key, resource
+                    yield outputs, name, key, resource
 
 ## READ RESOURCES
 PARSERS = {}
@@ -63,14 +67,14 @@ def _clean_dc(dcname):
 
 def iterhosts(resources):
     '''yield host tuples of (name, attributes, groups)'''
-    for module_name, key, resource in resources:
+    for outputs, module_name, key, resource in resources:
         resource_type, name = key.split('.', 1)
         try:
             parser = PARSERS[resource_type]
         except KeyError:
             continue
 
-        yield parser(resource, module_name)
+        yield parser(outputs, resource, module_name)
 
 
 def parses(prefix):
@@ -372,7 +376,7 @@ def openstack_host(resource, module_name):
 
 @parses('aws_instance')
 @calculate_mantl_vars
-def aws_host(resource, module_name):
+def aws_host(outputs, resource, module_name):
     name = resource['primary']['attributes']['tags.Name']
     raw_attrs = resource['primary']['attributes']
 
@@ -421,6 +425,12 @@ def aws_host(resource, module_name):
         'role': attrs['tags'].get('role', 'none'),
         'ansible_python_interpreter': attrs['tags'].get('python_bin','python')
     })
+
+    # Groups specific to Symphony
+    for output in outputs.keys():
+        if raw_attrs['private_ip'] in outputs[output]['value']:
+            groups.append(output)
+
 
     # groups specific to Mantl
     groups.extend(['aws_ami=' + attrs['ami'],
@@ -694,7 +704,6 @@ def query_host(hosts, target):
 def query_list(hosts):
     groups = defaultdict(dict)
     meta = {}
-
     for name, attrs, hostgroups in hosts:
         for group in set(hostgroups):
             groups[group].setdefault('hosts', [])
